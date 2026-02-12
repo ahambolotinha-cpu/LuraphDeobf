@@ -1,1 +1,34 @@
-
+local M = {}
+setmetatable(M, {
+	__newindex = function(t, k, v)
+		if k == "Deobf" and type(v) == "string" then
+			local HttpService = game:GetService("HttpService")
+			local raw = HttpService:GetAsync(v)
+			if not raw:find("LPH%$!") then error("Not Luraph v14.5+") end
+			local s, e = raw:find("LPH%$!"), raw:find("LPH_dQXmq")
+			if not (s and e) then error("Payload markers not found") end
+			local p = raw:sub(s, e + 10):gsub("\\9", "\t"):gsub("\\r", "\r")
+			local function dec(c)
+				c = c:gsub("z", "!!!!!"):gsub("%.%.%.%.", "")
+				local o = {}
+				for i = 1, #c, 5 do
+					local ch = c:sub(i, i + 4)
+					if #ch == 5 then
+						local b1, b2, b3, b4, b5 = string.byte(ch, 1, 5)
+						local val = (b5 - 33) + (b4 - 33)*85 + (b3 - 33)*7225 + (b2 - 33)*614125 + (b1 - 33)*52200625
+						table.insert(o, string.pack(">I4", val))
+					end
+				end
+				return table.concat(o)
+			end
+			local r = dec(p)
+			if r:sub(1, 4) ~= "\27Lua" then
+				r = r:gsub("\0", ""):gsub("[\1-\6\14-\31]", "")
+			end
+			print(r)
+		else
+			rawset(t, k, v)
+		end
+	end
+})
+return M
